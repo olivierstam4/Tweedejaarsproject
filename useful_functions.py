@@ -15,8 +15,8 @@ def remove_before(df, min_number):
 
 def import_file(sensor_type, sensor_number):
     """
-    For Locus: sensor_type = 'locus'
-    For Alta: sensor_type = 'alta'
+    For Locus: sensor_type = 'Locus'
+    For Alta: sensor_type = 'Alta'
 
     For sensor_number, use the one of the file, (B.253, etc)
     """
