@@ -16,11 +16,10 @@ def remove_before(df, min_number):
 # This function imports the right file
 def import_file(sensor_type, sensor_number):
     """
-    For Locus: sensor_type = 'locus', for the sensor number, only use the number (so not B),
-    For Alta: sensor_type = 'alta', for the sensor number, do use the letter to, so use the entire first part of the filename
+    For Locus: sensor_type = 'locus'
+    For Alta: sensor_type = 'alta'
+
+    For sensor_number, use the one of the file, (B.253, etc)
     """
     import pandas as pd
-    if sensor_type == 'locus' :
-        return pd.read_excel(f'Data_clean/{sensor_type}_sensors/2.B{sensor_number}_processed.xlsx')
-    elif sensor_type == 'alta':
-        return pd.read_excel(f'Data_clean/{sensor_type}_sensors/{sensor_number}_processed.xlsx')
+    return pd.read_excel(f'Data_clean/{sensor_type}_sensors/{sensor_number}_processed.xlsx')
