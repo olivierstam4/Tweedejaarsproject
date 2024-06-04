@@ -13,7 +13,6 @@ def remove_before(df, min_number):
     df = df[df['Count'] > min_number]
     return df
 
-# This function imports the right file
 def import_file(sensor_type, sensor_number):
     """
     For Locus: sensor_type = 'locus'
