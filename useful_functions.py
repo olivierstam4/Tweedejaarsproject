@@ -20,7 +20,7 @@ def import_file(sensor_type, sensor_number):
 
     For sensor_number, use the one of the file, (B.253, etc)
     """
-    import pandas as pd
+    import pandas as pd # type: ignore
     import os
     file_path = f'Data_clean/{sensor_type}_sensors/{sensor_number}_processed.xlsx'
     
