@@ -22,7 +22,10 @@ def import_file(sensor_type, sensor_number):
     """
     import pandas as pd # type: ignore
     import os
-    file_path = f'Data_clean/{sensor_type}_sensors/{sensor_number}_processed.xlsx'
+    if sensor_type == 'Locus':
+        file_path = f'Data_clean/{sensor_type}_sensors/{sensor_number}_processed.xlsx'
+    elif sensor_type == 'Alta':
+        file_path = f'Data_clean/{sensor_type}_sensors/{sensor_number}_combined.xlsx'
     
     if not os.path.exists(file_path):
         raise FileNotFoundError(
