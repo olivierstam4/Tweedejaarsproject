@@ -33,8 +33,9 @@ def import_file(sensor_type, sensor_number):
             f"Voor sensor_number, kijk naar hoe de file heet en gebruik daarvan dus de eerste 4 karakters'\n"
             f"Examples: 'Data_clean/Locus_sensors/B.253_processed.xlsx', 'Data_clean/Alta_sensors/B.254_processed.xlsx'"
         )
-    
-    return pd.read_excel(file_path)
+    file = pd.read_excel(file_path)
+    file.dropna(subset=['Count'], inplace=True)
+    return file
 
 def make_bins(data_file, num_bins, all_bins=False):
     """
