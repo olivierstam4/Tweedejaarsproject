@@ -93,7 +93,7 @@ def make_equal_bins(data_file, num_bins=4):
 def surrounded_by_low_counts(index, series, threshold=10, num_points=3):
     precede = series[max(0, index - num_points):index]
     follow = series[index + 1:index + 1 + num_points]
-    return all(precede > threshold) and all(follow > threshold) if len(precede) == num_points and len(follow) == num_points else False
+    return all(precede < threshold) and all(follow < threshold) if len(precede) == num_points and len(follow) == num_points else False
 
 def peaks_for_specific_timeframe(data, start_time, end_time):
     """
