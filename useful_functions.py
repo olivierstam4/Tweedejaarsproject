@@ -33,8 +33,9 @@ def import_file(sensor_type, sensor_number):
             f"Voor sensor_number, kijk naar hoe de file heet en gebruik daarvan dus de eerste 4 karakters'\n"
             f"Examples: 'Data_clean/Locus_sensors/B.253_processed.xlsx', 'Data_clean/Alta_sensors/B.254_processed.xlsx'"
         )
-    
-    return pd.read_excel(file_path)
+    file = pd.read_excel(file_path)
+    file.dropna(subset=['Count'], inplace=True)
+    return file
 
 def make_bins(data_file, num_bins, all_bins=False):
     """
@@ -92,4 +93,66 @@ def make_equal_bins(data_file, num_bins=4):
 def surrounded_by_low_counts(index, series, threshold=10, num_points=3):
     precede = series[max(0, index - num_points):index]
     follow = series[index + 1:index + 1 + num_points]
-    return all(precede > threshold) and all(follow > threshold) if len(precede) == num_points and len(follow) == num_points else False
+    return all(precede < threshold) and all(follow < threshold) if len(precede) == num_points and len(follow) == num_points else False
+
+def peaks_for_specific_timeframe(data, start_time, end_time):
+    """
+    Time and date formatted as yyyy-mm-dd hh-mm-ss
+    """
+
+    import matplotlib.pyplot as plt
+    mask = (data['Date'] >= start_time) & (data['Date'] <= end_time)
+    filtered_data = data.loc[mask]
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(filtered_data['Date'], filtered_data['Count'], marker='o')
+    plt.xlabel('Date')
+    plt.ylabel('Count')
+    plt.title('Count Data between {} and {}'.format(start_time, end_time))
+    plt.xticks(rotation=45)
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+def show_valid_peaks(data, day, threshold, consecutive_points):
+    """
+    day is formatted as yyyy-mm-dd 
+    threshold is the minimum value you want to classify as 'real' movement
+    consecutive_points is the amount of consecutive points under the treshold you need
+    """
+    import matplotlib.pyplot as plt
+    from scipy.signal import find_peaks
+
+    mask = data['Date'].dt.strftime('%Y-%m-%d') == day
+    filtered_data = data.loc[mask].reset_index(drop=True)
+
+    peaks, _ = find_peaks(filtered_data['Count'], height=filtered_data['Count'].mean())
+
+    valid_peaks = [index for index in peaks if surrounded_by_low_counts(index, filtered_data['Count'], threshold, consecutive_points)]
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(filtered_data['Date'], filtered_data['Count'], marker='o', label='Counts')
+    plt.plot(filtered_data['Date'].iloc[valid_peaks], filtered_data['Count'].iloc[valid_peaks], 'rx', label='Valid Peaks')
+    plt.xlabel('Date')
+    plt.ylabel('Count')
+    plt.title(f'Count Data with Valid Peaks of {day}')
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    filtered_data['Session'] = (filtered_data.index.isin(valid_peaks)).cumsum()
+
+    plt.figure(figsize=(10, 6))
+    for session, group in filtered_data.groupby('Session'):
+        plt.plot(group['Date'], group['Count'], marker='o', label=f'Session {session}')
+
+    plt.xlabel('Date')
+    plt.ylabel('Count')
+    plt.title(f'Grouped Sessions of {day}')
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
