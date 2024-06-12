@@ -162,9 +162,22 @@ def make_sessions(data, day, threshold, consecutive_points, offset=0):
     mask = data['Date'].dt.strftime('%Y-%m-%d') == day
     filtered_data = data.loc[mask].reset_index(drop=True)
 
-    # peaks, _ = find_peaks(filtered_data['Count'], height=filtered_data['Count'].mean())
-
     valid_peaks = [index for index in range(len(filtered_data['Count'])) if surrounded_by_low_counts(index, filtered_data['Count'], threshold, consecutive_points) and filtered_data['Count'][index] > threshold + offset]
     filtered_data['Session'] = (filtered_data.index.isin(valid_peaks)).cumsum()
 
     return filtered_data, valid_peaks
+
+def calculate_session_averages(filtered_data):
+    # Group by the 'Session' column and calculate the mean for each session
+    session_averages = filtered_data.groupby('Session').mean().reset_index()
+
+    return session_averages
+
+def add_session_averages(filtered_data):
+    # Group by the 'Session' column and calculate the mean for each session
+    session_averages = filtered_data.groupby('Session')['Count'].transform('mean')
+
+    # Add the session averages as a new column to the filtered_data DataFrame
+    filtered_data['Session_Average'] = session_averages
+
+    return filtered_data
