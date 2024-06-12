@@ -127,15 +127,7 @@ def show_valid_peaks(data, day, threshold, consecutive_points):
     consecutive_points is the amount of consecutive points under the treshold you need
     """
     import matplotlib.pyplot as plt
-    from scipy.signal import find_peaks
-
-    mask = data['Date'].dt.strftime('%Y-%m-%d') == day
-    filtered_data = data.loc[mask].reset_index(drop=True)
-
-    # peaks, _ = find_peaks(filtered_data['Count'], height=filtered_data['Count'].mean())
-
-    valid_peaks = [index for index in range(len(filtered_data['Count'])) if surrounded_by_low_counts(index, filtered_data['Count'], threshold, consecutive_points) and filtered_data['Count'][index] > threshold]
-
+    filtered_data, valid_peaks = make_sessions(data, day, threshold, consecutive_points)
     plt.figure(figsize=(10, 6))
     plt.plot(filtered_data['Date'], filtered_data['Count'], marker='o', label='Counts')
     plt.plot(filtered_data['Date'].iloc[valid_peaks], filtered_data['Count'].iloc[valid_peaks], 'rx', label='Valid Peaks')
@@ -165,3 +157,14 @@ def show_valid_peaks(data, day, threshold, consecutive_points):
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
+def make_sessions(data, day, threshold, consecutive_points):
+    mask = data['Date'].dt.strftime('%Y-%m-%d') == day
+    filtered_data = data.loc[mask].reset_index(drop=True)
+
+    # peaks, _ = find_peaks(filtered_data['Count'], height=filtered_data['Count'].mean())
+
+    valid_peaks = [index for index in range(len(filtered_data['Count'])) if surrounded_by_low_counts(index, filtered_data['Count'], threshold, consecutive_points) and filtered_data['Count'][index] > threshold]
+    filtered_data['Session'] = (filtered_data.index.isin(valid_peaks)).cumsum()
+
+    return filtered_data, valid_peaks
