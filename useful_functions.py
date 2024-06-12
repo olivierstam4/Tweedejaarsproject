@@ -90,10 +90,13 @@ def make_equal_bins(data_file, num_bins=4):
     # Display the histogram
     plt.show()
 
-def surrounded_by_low_counts(index, series, threshold=0, num_points=1):
-    precede = series[max(0, index - num_points):index]
-    all(precede <= threshold) 
-    if len(precede) >= num_points:
+def surrounded_by_low_counts(index, data, threshold=0, num_points=1):
+    start_index = max(0, index - num_points)
+    preceding_points = data[start_index:index]
+
+    preceding_lower = [point <= threshold for point in preceding_points]
+
+    if len(preceding_lower) == num_points and all(preceding_lower):
         return True
     else:
         return False
@@ -129,9 +132,9 @@ def show_valid_peaks(data, day, threshold, consecutive_points):
     mask = data['Date'].dt.strftime('%Y-%m-%d') == day
     filtered_data = data.loc[mask].reset_index(drop=True)
 
-    peaks, _ = find_peaks(filtered_data['Count'], height=filtered_data['Count'].mean())
+    # peaks, _ = find_peaks(filtered_data['Count'], height=filtered_data['Count'].mean())
 
-    valid_peaks = [index for index in peaks if surrounded_by_low_counts(index, filtered_data['Count'], threshold, consecutive_points)]
+    valid_peaks = [index for index in range(len(filtered_data['Count'])) if surrounded_by_low_counts(index, filtered_data['Count'], threshold, consecutive_points) and filtered_data['Count'][index] > threshold]
 
     plt.figure(figsize=(10, 6))
     plt.plot(filtered_data['Date'], filtered_data['Count'], marker='o', label='Counts')
