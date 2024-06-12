@@ -94,7 +94,7 @@ def surrounded_by_low_counts(index, data, threshold=0, num_points=1):
     start_index = max(0, index - num_points)
     preceding_points = data[start_index:index]
 
-    preceding_lower = [point < threshold for point in preceding_points]
+    preceding_lower = [point <= threshold for point in preceding_points]
 
     if len(preceding_lower) == num_points and all(preceding_lower):
         return True
