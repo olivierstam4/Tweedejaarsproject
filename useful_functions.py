@@ -90,7 +90,7 @@ def make_equal_bins(data_file, num_bins=4):
     # Display the histogram
     plt.show()
 
-def surrounded_by_low_counts(index, series, threshold=10, num_points=3):
+def surrounded_by_low_counts(index, series, threshold=0, num_points=1):
     precede = series[max(0, index - num_points):index]
     return all(precede <= threshold) if len(precede) == num_points else False
 
@@ -142,10 +142,13 @@ def show_valid_peaks(data, day, threshold, consecutive_points):
     plt.show()
 
     filtered_data['Session'] = (filtered_data.index.isin(valid_peaks)).cumsum()
+    threshold_line = [threshold] * len(filtered_data['Date'])
 
+    
     plt.figure(figsize=(10, 6))
     for session, group in filtered_data.groupby('Session'):
         plt.plot(group['Date'], group['Count'], marker='o', label=f'Session {session}')
+        plt.plot(filtered_data['Date'], threshold_line , color='red', label=f'Threshold')
 
     plt.xlabel('Date')
     plt.ylabel('Count')
