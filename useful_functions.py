@@ -92,7 +92,11 @@ def make_equal_bins(data_file, num_bins=4):
 
 def surrounded_by_low_counts(index, series, threshold=0, num_points=1):
     precede = series[max(0, index - num_points):index]
-    return all(precede <= threshold) if len(precede) == num_points else False
+    all(precede <= threshold) 
+    if len(precede) >= num_points:
+        return True
+    else:
+        return False
 
 def peaks_for_specific_timeframe(data, start_time, end_time):
     """
@@ -145,7 +149,7 @@ def show_valid_peaks(data, day, threshold, consecutive_points):
     threshold_line = [threshold] * len(filtered_data['Date'])
 
     
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(20, 6))
     for session, group in filtered_data.groupby('Session'):
         plt.plot(group['Date'], group['Count'], marker='o', label=f'Session {session}')
     plt.plot(filtered_data['Date'], threshold_line , color='red', label=f'Threshold')
