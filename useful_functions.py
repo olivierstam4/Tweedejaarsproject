@@ -148,7 +148,7 @@ def show_valid_peaks(data, day, threshold, consecutive_points):
     plt.figure(figsize=(10, 6))
     for session, group in filtered_data.groupby('Session'):
         plt.plot(group['Date'], group['Count'], marker='o', label=f'Session {session}')
-        plt.plot(filtered_data['Date'], threshold_line , color='red', label=f'Threshold')
+    plt.plot(filtered_data['Date'], threshold_line , color='red', label=f'Threshold')
 
     plt.xlabel('Date')
     plt.ylabel('Count')
