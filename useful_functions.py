@@ -120,14 +120,14 @@ def peaks_for_specific_timeframe(data, start_time, end_time):
     plt.tight_layout()
     plt.show()
 
-def show_valid_peaks(data, day, threshold, consecutive_points):
+def show_valid_peaks(data, day, threshold, consecutive_points, offset=0):
     """
     day is formatted as yyyy-mm-dd 
     threshold is the minimum value you want to classify as 'real' movement
     consecutive_points is the amount of consecutive points under the treshold you need
     """
     import matplotlib.pyplot as plt
-    filtered_data, valid_peaks = make_sessions(data, day, threshold, consecutive_points)
+    filtered_data, valid_peaks = make_sessions(data, day, threshold, consecutive_points, offset)
     plt.figure(figsize=(10, 6))
     plt.plot(filtered_data['Date'], filtered_data['Count'], marker='o', label='Counts')
     plt.plot(filtered_data['Date'].iloc[valid_peaks], filtered_data['Count'].iloc[valid_peaks], 'rx', label='Valid Peaks')
