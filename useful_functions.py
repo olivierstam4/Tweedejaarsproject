@@ -164,7 +164,10 @@ def make_sessions(data, day, threshold, consecutive_points, offset=0):
 
     valid_peaks = [index for index in range(len(filtered_data['Count'])) if surrounded_by_low_counts(index, filtered_data['Count'], threshold, consecutive_points) and filtered_data['Count'][index] > threshold + offset]
     filtered_data['Session'] = (filtered_data.index.isin(valid_peaks)).cumsum()
-
+    # # Drop rows where the 'Count' is below the threshold
+    # filtered_data = filtered_data[filtered_data['Count'] > threshold].reset_index(drop=True)
+    
+    
     return filtered_data, valid_peaks
 
 def calculate_session_averages(filtered_data):
