@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Excel File</title>
+</head>
+<body>
+    <h1>Upload Excel File and Filter by Date</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <label for="date">Select Date:</label>
+        <input type="date" id="date" name="date">
+        <br><br>
+        <input type="file" name="file">
+        <input type="submit" value="Upload">
+    </form>
+</body>
+</html>
+

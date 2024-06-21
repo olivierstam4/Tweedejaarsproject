@@ -158,6 +158,7 @@ def show_valid_peaks(data, day, threshold, consecutive_points, offset=0):
     plt.tight_layout()
     plt.show()
 
+
 def make_sessions(data, day, threshold, consecutive_points, offset=0):
     mask = data['Date'].dt.strftime('%Y-%m-%d') == day
     filtered_data = data.loc[mask].reset_index(drop=True)

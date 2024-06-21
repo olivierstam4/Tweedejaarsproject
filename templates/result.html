@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results</title>
+</head>
+<body>
+    <h1>Results</h1>
+    <p>{{ message }}</p>
+    <h2>Graph 1</h2>
+    <img src="data:image/png;base64,{{ img1 }}" alt="Graph 1">
+    <h2>Graph 2</h2>
+    <img src="data:image/png;base64,{{ img2 }}" alt="Graph 2">
+    <br><br>
+    <a href="{{ url_for('index') }}">Upload another file</a>
+</body>
+</html>
