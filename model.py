@@ -3,28 +3,46 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import numpy as np
 from io import BytesIO
+from IPython.display import Image, display
+import matplotlib.dates as mdates
+import base64
+def preprocess(file_path):
+    data = pd.read_excel(file_path, skiprows=2)
+    data = data[['Date', 'Count']]
+    data['Date'] = pd.to_datetime(data['Date'], errors='coerce')
+    data.dropna(subset=['Date'], inplace=True)
+    data = data[data['Date'].dt.hour.between(8, 24)]
+    return data
 
+def summary(info):
+    for index, row in info.iterrows():
+        session = row['Session']
+        total_time = row['Num_Points'] * 5
+        hours = total_time // 60
+        minutes = total_time % 60
+        mean_movements = row['Mean']
+        people = int(row['People'])
 
-def predict_occupancy_session(file_name, date):
+        if hours > 0:
+            time_str = f"{int(hours)} hour(s) and {int(minutes)} minute(s)"
+        else:
+            time_str = f"{int(minutes)} minute(s)"
 
-    # Load the data from CSV (replace 'path_to_your_data.csv' with your actual file path)
-    data = file_name
+        print(
+            f"Session {int(session)} took {time_str}, with an average of "
+            f"{mean_movements:.0f} movements per 5 minutes, resulting in an estimated "
+            f"occupancy of {people} people\n")
 
-    # Convert the 'Date' column to datetime format
+def predict_occupancy_session(data, date):
     data['Date'] = pd.to_datetime(data['Date'])
-
-    # Sort data by date in case it's not sorted
     data = data.sort_values('Date')
 
-    # Initialize variables
     session_id = 0
     in_session = False
     session_labels = []
 
-    # Iterate over the data to identify sessions
     for i in range(len(data)):
         if data['Count'].iloc[i] > 0 and not in_session:
-            # Start a new session
             in_session = True
             session_id += 1
 
@@ -36,15 +54,12 @@ def predict_occupancy_session(file_name, date):
         if in_session and data['Count'].iloc[i] < 5:
             in_session = False
 
-    # Add session labels to the dataframe
     data['Session'] = session_labels
 
-    # Remove sessions with fewer than 6 data points
     session_counts = data['Session'].value_counts()
     valid_sessions = session_counts[session_counts >= 6].index
     data.loc[~data['Session'].isin(valid_sessions), 'Session'] = 0
 
-    # Function to remove outliers and calculate average
     def remove_outliers_and_calculate_avg(counts):
         q1 = counts.quantile(0.25)
         q3 = counts.quantile(0.75)
@@ -55,13 +70,10 @@ def predict_occupancy_session(file_name, date):
             (counts >= lower_bound) & (counts <= upper_bound)]
         return filtered_counts.mean()
 
-    # Function to determine the number of people based on the average count
     def determine_people(avg_count):
-        # Linear relationship: 250 -> 4 people, 125 -> 2 people
-        people = avg_count / 62.5  # 250/4 = 62.5
+        people = avg_count / 62.5
         return round(people)
 
-    # Function to split sessions based on changes in rolling average
     def split_sessions_based_on_changes(data, window=5, change_threshold=50):
         new_session_id = max(data['Session']) + 1
         for session in data['Session'].unique():
@@ -85,48 +97,45 @@ def predict_occupancy_session(file_name, date):
                     break
                 prev_avg = current_avg
 
-    # Split sessions based on changes in rolling average
     split_sessions_based_on_changes(data)
 
-    # Remove sessions with fewer than 6 data points after splitting
     session_counts = data['Session'].value_counts()
     valid_sessions = session_counts[session_counts >= 6].index
     data.loc[~data['Session'].isin(valid_sessions), 'Session'] = 0
 
-    # Function to plot data for a specific day
     def plot_day(data, date):
-        # Filter data for the specified day
         start_date = datetime.strptime(date, '%Y-%m-%d')
         end_date = start_date + timedelta(days=1)
         day_data = data[
             (data['Date'] >= start_date) & (data['Date'] < end_date)]
 
-        # Plot the original data line
         plt.figure(figsize=(15, 7))
         plt.plot(np.array(day_data['Date']), np.array(day_data['Count']),
                  label='Original Count', color='black', linewidth=1, alpha=0.5)
 
-        # Overlay the session data
         unique_sessions = day_data['Session'].unique()
 
-        for session in unique_sessions[1:]:
+        for index, session in enumerate(unique_sessions[1:]):
             session_data = day_data[day_data['Session'] == session]
             volume = len(session_data)
             avg_count = remove_outliers_and_calculate_avg(session_data['Count'])
             people = determine_people(avg_count)
-            label = f'Session {session}: {people} people, Volume={volume}, Avg Count={avg_count:.2f}'
-            color = None  # Let matplotlib choose the color
+            label = f'Session {index + 1}: estimated {people} people'
+
+            color = None
 
             plt.plot(np.array(session_data['Date']),
                      np.array(session_data['Count']), label=label, linewidth=2,
                      alpha=0.5)
 
         plt.title(
-            f'Movement Count Over Time on {date} with Sessions Highlighted')
-        plt.xlabel('Date')
+            f'Occupancy for the sessions on {date}')
+        plt.xlabel('Time of day')
         plt.ylabel('Movement Count')
         plt.legend()
-
+        ax = plt.gca()
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+        plt.xticks(rotation=45)
         img_buf = BytesIO()
         plt.savefig(img_buf, format='png')
         plt.close()
@@ -139,20 +148,23 @@ def predict_occupancy_session(file_name, date):
 
     def calculate_session_stats(data):
         stats = []
-        for session in data['Session'].unique():
+        for index, session in enumerate(data['Session'].unique()):
             if session == 0:
                 continue
             session_data = data[data['Session'] == session]
+            avg_count = remove_outliers_and_calculate_avg(session_data['Count'])
+            people = determine_people(avg_count)
             total = session_data['Count'].sum()
             mean = session_data['Count'].mean()
             std = session_data['Count'].std()
             num_points = len(session_data)
             stats.append({
-                'Session': session,
+                'Session': index,
                 'Total': total,
                 'Mean': mean,
                 'Std': std,
-                'Num_Points': num_points
+                'Num_Points': num_points,
+                'People': people,
             })
         return stats
 

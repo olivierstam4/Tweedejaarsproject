@@ -4,16 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Excel File</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        form {
+            margin-top: 20px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+        }
+        input[type="date"], input[type="file"], input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Upload Excel File and Filter by Date</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <label for="date">Select Date:</label>
-        <input type="date" id="date" name="date">
-        <br><br>
-        <input type="file" name="file">
-        <input type="submit" value="Upload">
-    </form>
+    <div class="container">
+        <h1>Upload Excel File and Filter by Date</h1>
+        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+            <label for="date">Select Date:</label>
+            <input type="date" id="date" name="date" required>
+            <br><br>
+            <label for="file">Select Excel File:</label>
+            <input type="file" name="file" id="file" accept=".xlsx, .xls" required>
+            <br><br>
+            <input type="submit" value="Upload">
+        </form>
+    </div>
+
+    <!-- JavaScript to show alert if file or date is missing -->
+    <script>
+        document.getElementById("uploadForm").addEventListener("submit", function(event) {
+            var fileInput = document.getElementById("file");
+            var dateInput = document.getElementById("date");
+
+            if (!fileInput.files.length || !dateInput.value) {
+                event.preventDefault(); // Prevent form submission
+                var errorMessage = document.createElement("div");
+                errorMessage.classList.add("error-message");
+                errorMessage.textContent = "Please select a file and enter a date.";
+                document.getElementById("uploadForm").appendChild(errorMessage);
+                setTimeout(function() {
+                    errorMessage.remove();
+                }, 3000); // Remove error message after 3 seconds
+            }
+        });
+    </script>
 </body>
 </html>
-
