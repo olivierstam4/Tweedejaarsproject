@@ -30,7 +30,7 @@ def summary(info):
         hours = total_time // 60
         minutes = total_time % 60
         mean_movements = row['Mean']
-        people = int(row['People'])
+        people = row['People']
 
         if hours > 0:
             time_str = f"{int(hours)} hour(s) and {int(minutes)} minute(s)"

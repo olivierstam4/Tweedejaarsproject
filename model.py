@@ -21,7 +21,7 @@ def summary(info):
         hours = total_time // 60
         minutes = total_time % 60
         mean_movements = row['Mean']
-        people = int(row['People'])
+        people = row['People']
 
         if hours > 0:
             time_str = f"{int(hours)} hour(s) and {int(minutes)} minute(s)"
@@ -111,7 +111,7 @@ def predict_occupancy_session(data, date):
 
         plt.figure(figsize=(15, 7))
         plt.plot(np.array(day_data['Date']), np.array(day_data['Count']),
-                 label='Original Count', color='black', linewidth=1, alpha=0.5)
+                 label='Noise', color='black', linewidth=1, alpha=0.5)
 
         unique_sessions = day_data['Session'].unique()
 
@@ -120,6 +120,12 @@ def predict_occupancy_session(data, date):
             volume = len(session_data)
             avg_count = remove_outliers_and_calculate_avg(session_data['Count'])
             people = determine_people(avg_count)
+            if people == 0:
+                people = '1'
+            elif people > 4:
+                people = '4+'
+            else:
+                people = str(int(people))
             label = f'Session {index + 1}: estimated {people} people'
 
             color = None
@@ -154,6 +160,12 @@ def predict_occupancy_session(data, date):
             session_data = data[data['Session'] == session]
             avg_count = remove_outliers_and_calculate_avg(session_data['Count'])
             people = determine_people(avg_count)
+            if people == 0:
+                people = '1'
+            elif people > 4:
+                people = '4+'
+            else:
+                people = str(int(people))
             total = session_data['Count'].sum()
             mean = session_data['Count'].mean()
             std = session_data['Count'].std()
