@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Result</title>
+    <title>Results</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,25 +23,38 @@
             text-align: center;
             color: #333;
         }
-        .result-section {
+        .result {
             margin-bottom: 20px;
         }
-        .result-section img {
-            max-width: 100%;
-            height: auto;
+        .result-day {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
         }
-        .result-section p {
-            white-space: pre-wrap; /* Ensures newlines are preserved */
+        img {
+            max-width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .summary {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #555;
+            white-space: pre-wrap; /* To preserve line breaks */
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Result for {{ specific_date }}</h1>
-        <div class="result-section">
-            <img src="data:image/png;base64,{{ img }}" alt="Graph Image">
-            <p>{{ summary_text }}</p>
+        <h1>Results</h1>
+        {% for img_data, summary in zip(img_data_list, summary_list) %}
+        <div class="result-day">
+            <img src="data:image/png;base64,{{ img_data }}" alt="Graph Image">
+            <div class="summary">{{ summary }}</div>
         </div>
+        {% endfor %}
     </div>
 </body>
 </html>
