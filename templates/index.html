@@ -90,13 +90,17 @@
 </head>
 <body>
     <div class="container">
-        <h1>Upload Excel File and Filter by Date</h1>
+        <h1>Occupancy visualizations</h1>
         <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
-            <label for="file">Choose Excel file</label>
+            <label for="file">Choose a raw Excel file</label>
             <input type="file" id="file" name="file" accept=".xlsx, .xls" required>
+            <label for="date">Select a specific date or choose to process all dates</label>
+
             <div class="date-options">
+
                 <div>
-                    <label for="date">Select specific date</label>
+
+                    <br>
                     <input type="date" id="date" name="date" style="margin-left: 10px;">
                 </div>
                 <div style="margin-left: 20px;">

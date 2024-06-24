@@ -7,6 +7,8 @@ from IPython.display import Image, display
 import matplotlib.dates as mdates
 import base64
 import joblib
+
+
 def preprocess(file_path):
     data = pd.read_excel(file_path, skiprows=2)
     data = data[['Date', 'Count']]
@@ -14,6 +16,7 @@ def preprocess(file_path):
     data.dropna(subset=['Date'], inplace=True)
     data = data[data['Date'].dt.hour.between(8, 24)]
     return data
+
 
 def summary(info, occupancy_mode):
     for index, row in info.iterrows():
@@ -41,18 +44,21 @@ def summary(info, occupancy_mode):
                 occupancy_info = 'with an estimated occupancy of 3+ people'
 
         print(f"Session {int(session)} took {time_str}, with an average of "
-            f"{mean_movements:.0f} movements per 5 minutes,{occupancy_info}\n\n"
-        )
+              f"{mean_movements:.0f} movements per 5 minutes,{occupancy_info}\n\n"
+              )
 
 
 neigh = joblib.load('nearest_neighbors_model.pkl')
 occupancies = joblib.load('occupancies.pkl')
 
-# Function to find nearest neighbor occupancy
+
 def find_nearest_occupancy(count):
-    distance, index = neigh.kneighbors(np.array([[count]]), return_distance=True)
+    distance, index = neigh.kneighbors(np.array([[count]]),
+                                       return_distance=True)
     nearest_occupancy = occupancies[index[0][0]]
     return nearest_occupancy
+
+
 def predict_occupancy_session(data, date, occupancy_mode='Exact'):
     data['Date'] = pd.to_datetime(data['Date'])
     data = data.sort_values('Date')
@@ -149,7 +155,7 @@ def predict_occupancy_session(data, date, occupancy_mode='Exact'):
                     people = str(int(people))
             else:
                 if avg_count < 153:
-                       people = '1-2'
+                    people = '1-2'
                 else:
                     people = '3+'
             if people == '1':
@@ -178,7 +184,6 @@ def predict_occupancy_session(data, date, occupancy_mode='Exact'):
 
         return img_buf.getvalue()
 
-    # Plot data for a specific day (e.g., '2024-06-12')
     img = plot_day(data, date)
 
     def calculate_session_stats(data):
@@ -212,4 +217,3 @@ def predict_occupancy_session(data, date, occupancy_mode='Exact'):
     session_stats = calculate_session_stats(data)
     session_stats_df = pd.DataFrame(session_stats)
     return img, session_stats_df
-

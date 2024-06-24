@@ -2,9 +2,17 @@ from model import *
 from flask import Flask, request, redirect, url_for, render_template, send_file
 import os
 import logging
-import base64
-import pandas as pd
+import openpyxl
 import io
+import pandas as pd
+import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
+import numpy as np
+from io import BytesIO
+from IPython.display import Image, display
+import matplotlib.dates as mdates
+import base64
+import joblib
 from jinja2 import Environment
 
 app = Flask(__name__)
@@ -90,17 +98,13 @@ def upload_file():
             return render_template('results.html', img_data_list=img_data_list,
                                    summary_list=summary_list)
         elif specific_date:
-            # Process the file and get the images of the graphs
             img, session_stats = process_file(data, specific_date, occupancy_mode)
             logging.debug('File processed successfully')
 
-            # Encode the images to base64 to embed them in HTML
             img_base64 = base64.b64encode(img).decode('utf-8')
 
-            # Generate the summary text
             summary_text = summary(session_stats, occupancy_mode)
 
-            # Return the template with the images and the message
             return render_template('result.html', img=img_base64,
                                    message='Done!',
                                    specific_date=specific_date,
