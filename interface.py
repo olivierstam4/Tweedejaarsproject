@@ -12,17 +12,14 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'xlsx', 'xls'}
 
 logging.basicConfig(level=logging.DEBUG)
-
-# Add zip to Jinja2 environment
 app.jinja_env.globals.update(zip=zip)
 
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config[
-        'ALLOWED_EXTENSIONS']
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
-def summary(info):
+def summary(info, occupancy_mode):
     output = io.StringIO()
     for index, row in info.iterrows():
         session = row['Session']
@@ -37,10 +34,17 @@ def summary(info):
         else:
             time_str = f"{int(minutes)} minute(s)"
 
+        if occupancy_mode == 'Exact':
+            occupancy_info = f"resulting in an estimated occupancy of {people} people"
+        else:
+            if mean_movements < 153:
+                occupancy_info = 'with an estimated occupancy of 1-2 people'
+            else:
+                occupancy_info = 'with an estimated occupancy of 3+ people'
+
         output.write(
             f"Session {int(session)} took {time_str}, with an average of "
-            f"{mean_movements:.0f} movements per 5 minutes, resulting in an estimated "
-            f"occupancy of {people} people\n\n"
+            f"{mean_movements:.0f} movements per 5 minutes,{occupancy_info}\n\n"
         )
     return output.getvalue()
 
@@ -57,6 +61,7 @@ def upload_file():
     file = request.files['file']
     specific_date = request.form.get('date')
     no_date = 'no_date' in request.form
+    occupancy_mode = request.form.get('occupancy_mode')
     if file.filename == '':
         return redirect(request.url)
     if file and allowed_file(file.filename):
@@ -77,23 +82,23 @@ def upload_file():
 
             dates = data['Date'].dt.date.unique()
             for date in dates:
-                img, session_stats = process_file(data, str(date))
+                img, session_stats = process_file(data, str(date), occupancy_mode)
                 img_base64 = base64.b64encode(img).decode('utf-8')
                 img_data_list.append(img_base64)
-                summary_list.append(summary(session_stats))
+                summary_list.append(summary(session_stats, occupancy_mode))
 
             return render_template('results.html', img_data_list=img_data_list,
                                    summary_list=summary_list)
         elif specific_date:
             # Process the file and get the images of the graphs
-            img, session_stats = process_file(data, specific_date)
+            img, session_stats = process_file(data, specific_date, occupancy_mode)
             logging.debug('File processed successfully')
 
             # Encode the images to base64 to embed them in HTML
             img_base64 = base64.b64encode(img).decode('utf-8')
 
             # Generate the summary text
-            summary_text = summary(session_stats)
+            summary_text = summary(session_stats, occupancy_mode)
 
             # Return the template with the images and the message
             return render_template('result.html', img=img_base64,
@@ -102,7 +107,8 @@ def upload_file():
                                    summary_text=summary_text)
     return redirect(request.url)
 
-def process_file(data, specific_date):
+
+def process_file(data, specific_date, occupancy_mode):
     logging.debug(f'Processing data for date: {specific_date}')
 
     data = data[data['Date'].dt.date == pd.to_datetime(specific_date).date()]
@@ -111,7 +117,7 @@ def process_file(data, specific_date):
 
     threshold = 0
     consecutive_points = 1
-    img, session_stats = predict_occupancy_session(data, specific_date)
+    img, session_stats = predict_occupancy_session(data, specific_date, occupancy_mode)
     logging.debug('Valid peaks shown')
     return img, session_stats
 

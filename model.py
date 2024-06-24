@@ -6,6 +6,7 @@ from io import BytesIO
 from IPython.display import Image, display
 import matplotlib.dates as mdates
 import base64
+import joblib
 def preprocess(file_path):
     data = pd.read_excel(file_path, skiprows=2)
     data = data[['Date', 'Count']]
@@ -14,7 +15,7 @@ def preprocess(file_path):
     data = data[data['Date'].dt.hour.between(8, 24)]
     return data
 
-def summary(info):
+def summary(info, occupancy_mode):
     for index, row in info.iterrows():
         session = row['Session']
         total_time = row['Num_Points'] * 5
@@ -28,12 +29,31 @@ def summary(info):
         else:
             time_str = f"{int(minutes)} minute(s)"
 
-        print(
-            f"Session {int(session)} took {time_str}, with an average of "
-            f"{mean_movements:.0f} movements per 5 minutes, resulting in an estimated "
-            f"occupancy of {people} people\n")
+        if occupancy_mode == 'Exact':
+            if people == '1':
+                occupancy_info = f"resulting in an estimated occupancy of {people} person"
+            else:
+                occupancy_info = f"resulting in an estimated occupancy of {people} people"
+        else:
+            if mean_movements < 153:
+                occupancy_info = 'with an estimated occupancy of 1-2 people'
+            else:
+                occupancy_info = 'with an estimated occupancy of 3+ people'
 
-def predict_occupancy_session(data, date):
+        print(f"Session {int(session)} took {time_str}, with an average of "
+            f"{mean_movements:.0f} movements per 5 minutes,{occupancy_info}\n\n"
+        )
+
+
+neigh = joblib.load('nearest_neighbors_model.pkl')
+occupancies = joblib.load('occupancies.pkl')
+
+# Function to find nearest neighbor occupancy
+def find_nearest_occupancy(count):
+    distance, index = neigh.kneighbors(np.array([[count]]), return_distance=True)
+    nearest_occupancy = occupancies[index[0][0]]
+    return nearest_occupancy
+def predict_occupancy_session(data, date, occupancy_mode='Exact'):
     data['Date'] = pd.to_datetime(data['Date'])
     data = data.sort_values('Date')
 
@@ -119,14 +139,23 @@ def predict_occupancy_session(data, date):
             session_data = day_data[day_data['Session'] == session]
             volume = len(session_data)
             avg_count = remove_outliers_and_calculate_avg(session_data['Count'])
-            people = determine_people(avg_count)
-            if people == 0:
-                people = '1'
-            elif people > 4:
-                people = '4+'
+            people = find_nearest_occupancy(avg_count)
+            if occupancy_mode == 'Exact':
+                if people == 0:
+                    people = '1'
+                elif people > 4:
+                    people = '4+'
+                else:
+                    people = str(int(people))
             else:
-                people = str(int(people))
-            label = f'Session {index + 1}: estimated {people} people'
+                if avg_count < 153:
+                       people = '1-2'
+                else:
+                    people = '3+'
+            if people == '1':
+                label = f'Session {index + 1}: estimated {people} person'
+            else:
+                label = f'Session {index + 1}: estimated {people} people'
 
             color = None
 
@@ -159,7 +188,7 @@ def predict_occupancy_session(data, date):
                 continue
             session_data = data[data['Session'] == session]
             avg_count = remove_outliers_and_calculate_avg(session_data['Count'])
-            people = determine_people(avg_count)
+            people = find_nearest_occupancy(avg_count)
             if people == 0:
                 people = '1'
             elif people > 4:
