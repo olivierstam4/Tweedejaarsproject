@@ -1,6 +1,7 @@
-from model import *
-from flask import Flask, request, redirect, url_for, render_template, send_file
+from flask import Flask, request, redirect, url_for, render_template, send_file, Response
 import os
+from model import *
+
 import logging
 import openpyxl
 import io
@@ -9,23 +10,20 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import numpy as np
 from io import BytesIO
-from IPython.display import Image, display
-import matplotlib.dates as mdates
 import base64
 import joblib
-from jinja2 import Environment
+
 
 app = Flask(__name__)
+
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'xlsx', 'xls'}
 
 logging.basicConfig(level=logging.DEBUG)
 app.jinja_env.globals.update(zip=zip)
 
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
-
 
 def summary(info, occupancy_mode):
     output = io.StringIO()
@@ -56,11 +54,9 @@ def summary(info, occupancy_mode):
         )
     return output.getvalue()
 
-
 @app.route('/')
 def index():
     return render_template('index.html')
-
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -84,19 +80,37 @@ def upload_file():
         data.dropna(subset=['Date'], inplace=True)
         data = data[data['Date'].dt.hour.between(8, 24)]
 
+        csv_file_name = f"{os.path.splitext(filename)[0]}_info_csv.csv"
+        csv_file_path = os.path.join(app.config['UPLOAD_FOLDER'], csv_file_name)
+
         if no_date:
             img_data_list = []
             summary_list = []
+            all_session_stats = []
 
             dates = data['Date'].dt.date.unique()
+            all_data = []
+
             for date in dates:
-                img, session_stats = process_file(data, str(date), occupancy_mode)
+                img, session_stats = process_file(data, str(date),
+                                                  occupancy_mode)
                 img_base64 = base64.b64encode(img).decode('utf-8')
                 img_data_list.append(img_base64)
                 summary_list.append(summary(session_stats, occupancy_mode))
 
+                df = pd.DataFrame(session_stats)
+                df.insert(0, 'Date', date)
+
+                all_data.append(df)
+                all_session_stats.extend(session_stats)
+
+            csv_data = pd.concat(all_data, ignore_index=True)
+
+            csv_data.to_csv(csv_file_path, index=False)
+
             return render_template('results.html', img_data_list=img_data_list,
-                                   summary_list=summary_list)
+                                   summary_list=summary_list,
+                                   csv_file_name=csv_file_name)
         elif specific_date:
             img, session_stats = process_file(data, specific_date, occupancy_mode)
             logging.debug('File processed successfully')
@@ -105,12 +119,15 @@ def upload_file():
 
             summary_text = summary(session_stats, occupancy_mode)
 
+            csv_data = pd.DataFrame(session_stats)
+            csv_data.to_csv(csv_file_path, index=False)
+
             return render_template('result.html', img=img_base64,
                                    message='Done!',
                                    specific_date=specific_date,
-                                   summary_text=summary_text)
+                                   summary_text=summary_text,
+                                   csv_file_name=csv_file_name)
     return redirect(request.url)
-
 
 def process_file(data, specific_date, occupancy_mode):
     logging.debug(f'Processing data for date: {specific_date}')
@@ -125,6 +142,10 @@ def process_file(data, specific_date, occupancy_mode):
     logging.debug('Valid peaks shown')
     return img, session_stats
 
+@app.route('/download_csv/<filename>')
+def download_csv(filename):
+    return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename),
+                     as_attachment=True)
 
 if __name__ == '__main__':
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
