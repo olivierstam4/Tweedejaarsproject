@@ -1,4 +1,5 @@
-from flask import Flask, request, redirect, url_for, render_template, send_file, Response
+from flask import Flask, request, redirect, url_for, render_template, send_file, \
+    Response
 import os
 from model import *
 
@@ -13,7 +14,6 @@ from io import BytesIO
 import base64
 import joblib
 
-
 app = Flask(__name__)
 
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -22,8 +22,11 @@ app.config['ALLOWED_EXTENSIONS'] = {'xlsx', 'xls'}
 logging.basicConfig(level=logging.DEBUG)
 app.jinja_env.globals.update(zip=zip)
 
+
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config[
+        'ALLOWED_EXTENSIONS']
+
 
 def summary(info, occupancy_mode):
     output = io.StringIO()
@@ -54,9 +57,11 @@ def summary(info, occupancy_mode):
         )
     return output.getvalue()
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -112,7 +117,8 @@ def upload_file():
                                    summary_list=summary_list,
                                    csv_file_name=csv_file_name)
         elif specific_date:
-            img, session_stats = process_file(data, specific_date, occupancy_mode)
+            img, session_stats = process_file(data, specific_date,
+                                              occupancy_mode)
             logging.debug('File processed successfully')
 
             img_base64 = base64.b64encode(img).decode('utf-8')
@@ -129,6 +135,7 @@ def upload_file():
                                    csv_file_name=csv_file_name)
     return redirect(request.url)
 
+
 def process_file(data, specific_date, occupancy_mode):
     logging.debug(f'Processing data for date: {specific_date}')
 
@@ -138,14 +145,17 @@ def process_file(data, specific_date, occupancy_mode):
 
     threshold = 0
     consecutive_points = 1
-    img, session_stats = predict_occupancy_session(data, specific_date, occupancy_mode)
+    img, session_stats = predict_occupancy_session(data, specific_date,
+                                                   occupancy_mode)
     logging.debug('Valid peaks shown')
     return img, session_stats
+
 
 @app.route('/download_csv/<filename>')
 def download_csv(filename):
     return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename),
                      as_attachment=True)
+
 
 if __name__ == '__main__':
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
