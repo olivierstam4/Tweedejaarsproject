@@ -2,15 +2,14 @@ from flask import Flask, request, redirect, url_for, render_template, send_file,
     Response
 import os
 from model import *
-
 import logging
 import openpyxl
 import io
+from io import BytesIO
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import numpy as np
-from io import BytesIO
 import base64
 import joblib
 
@@ -27,7 +26,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config[
         'ALLOWED_EXTENSIONS']
 
-
+# modified summary for the interface handling
 def summary(info, occupancy_mode):
     output = io.StringIO()
     for index, row in info.iterrows():
@@ -110,7 +109,7 @@ def upload_file():
                 all_session_stats.extend(session_stats)
 
             csv_data = pd.concat(all_data, ignore_index=True)
-
+            # handling the csv file
             csv_data.to_csv(csv_file_path, index=False)
 
             return render_template('results.html', img_data_list=img_data_list,

@@ -9,7 +9,14 @@ import base64
 import joblib
 
 
-def preprocess(file_path):
+def preprocess(file_path: str):
+    """"
+    input: raw excel file path
+    output: cleaned pandas DataFrame with Date and Count columns
+
+    Deals with the raw excel files, Skips first two white lines and only
+    uses the Date and Count, will also drop NaN values and closed hours.
+    """
     data = pd.read_excel(file_path, skiprows=2)
     data = data[['Date', 'Count']]
     data['Date'] = pd.to_datetime(data['Date'], errors='coerce')
@@ -19,6 +26,11 @@ def preprocess(file_path):
 
 
 def summary(info, occupancy_mode):
+    """
+    input: a dictionary of info gotten from the predict_occupancy_session and
+    the desired occupancy mode (grouped or exact)
+    output: prints a summary of the sessions
+    """
     for index, row in info.iterrows():
         session = row['Session']
         total_time = row['Num_Points'] * 5
@@ -48,11 +60,18 @@ def summary(info, occupancy_mode):
               )
 
 
+# load the classification
 neigh = joblib.load('nearest_neighbors_model.pkl')
 occupancies = joblib.load('occupancies.pkl')
 
 
 def find_nearest_occupancy(count):
+    """
+    input: average count of the session
+    output: the nearest occupancy class.
+
+    Handeling the estimation.
+    """
     distance, index = neigh.kneighbors(np.array([[count]]),
                                        return_distance=True)
     nearest_occupancy = occupancies[index[0][0]]
@@ -60,13 +79,18 @@ def find_nearest_occupancy(count):
 
 
 def predict_occupancy_session(data, date, occupancy_mode='Exact'):
+    """"
+    This function handles the session classification and extracting information
+    """
     data['Date'] = pd.to_datetime(data['Date'])
     data = data.sort_values('Date')
 
+    # start values
     session_id = 0
     in_session = False
     session_labels = []
 
+    # loop through the data
     for i in range(len(data)):
         if data['Count'].iloc[i] > 0 and not in_session:
             in_session = True
@@ -87,6 +111,9 @@ def predict_occupancy_session(data, date, occupancy_mode='Exact'):
     data.loc[~data['Session'].isin(valid_sessions), 'Session'] = 0
 
     def remove_outliers_and_calculate_avg(counts):
+        """"
+        Handling the outliers with the interquartile range
+        """
         q1 = counts.quantile(0.25)
         q3 = counts.quantile(0.75)
         iqr = q3 - q1
@@ -96,11 +123,10 @@ def predict_occupancy_session(data, date, occupancy_mode='Exact'):
             (counts >= lower_bound) & (counts <= upper_bound)]
         return filtered_counts.mean()
 
-    def determine_people(avg_count):
-        people = avg_count / 62.5
-        return round(people)
-
-    def split_sessions_based_on_changes(data, window=5, change_threshold=50):
+    def split_sessions_based_on_changes(data, window=25, change_threshold=10):
+        """
+        Rolling average handling
+        """
         new_session_id = max(data['Session']) + 1
         for session in data['Session'].unique():
             if session == 0:
@@ -110,7 +136,7 @@ def predict_occupancy_session(data, date, occupancy_mode='Exact'):
                 continue
 
             rolling_avg = session_data['Count'].rolling(window=window,
-                                                        min_periods=2).mean()
+                                                        min_periods=20).mean()
             session_data = session_data.copy()
             session_data['Rolling_Avg'] = rolling_avg
 
@@ -124,12 +150,15 @@ def predict_occupancy_session(data, date, occupancy_mode='Exact'):
                 prev_avg = current_avg
 
     split_sessions_based_on_changes(data)
-
     session_counts = data['Session'].value_counts()
     valid_sessions = session_counts[session_counts >= 6].index
     data.loc[~data['Session'].isin(valid_sessions), 'Session'] = 0
 
     def plot_day(data, date):
+        """
+        plotting the data
+        """
+        date = str(date).split()[0]
         start_date = datetime.strptime(date, '%Y-%m-%d')
         end_date = start_date + timedelta(days=1)
         day_data = data[
@@ -204,6 +233,8 @@ def predict_occupancy_session(data, date, occupancy_mode='Exact'):
             mean = session_data['Count'].mean()
             std = session_data['Count'].std()
             num_points = len(session_data)
+            # you can append info very easily here if you wish. This is just a
+            # start example.
             stats.append({
                 'Session': index,
                 'Total': total,
@@ -217,3 +248,12 @@ def predict_occupancy_session(data, date, occupancy_mode='Exact'):
     session_stats = calculate_session_stats(data)
     session_stats_df = pd.DataFrame(session_stats)
     return img, session_stats_df
+
+
+def unique_days(data):
+    """
+    prints all the unique days of a dataframe
+    """
+    unique_dates = data['Date'].dt.date.unique()
+    for date in unique_dates:
+        print(date)
